@@ -148,7 +148,7 @@ zstdmt_l_%.o : $(LIB_SRCDIR)/legacy/%.c
 
 FULLBENCHS := fullbench fullbench32
 CLEAN += $(FULLBENCHS)
-fullbench32: CPPFLAGS += -m32
+fullbench32: override CPPFLAGS += -m32
 $(FULLBENCHS) : CPPFLAGS += $(MULTITHREAD_CPP) -Wno-deprecated-declarations
 $(FULLBENCHS) : LDFLAGS += $(MULTITHREAD_LD)
 $(FULLBENCHS) : DEBUGFLAGS = -DNDEBUG  # turn off assert() for speed measurements
@@ -173,19 +173,19 @@ fuzzer : LDFLAGS += $(MULTITHREAD_LD)
 fuzzer : $(ZSTDMT_OBJECTS)
 fuzzer fuzzer32 : $(ZDICT_FILES) $(PRGDIR)/util.c $(PRGDIR)/timefn.c $(PRGDIR)/datagen.c fuzzer.c
 
-fuzzer32 : CFLAGS += -m32 $(MULTITHREAD)
+fuzzer32 : override CFLAGS += -m32 $(MULTITHREAD)
 fuzzer32 : $(ZSTD_FILES)
 	$(LINK.c) $^ -o $@$(EXT)
 
 # note : broken : requires symbols unavailable from dynamic library
 fuzzer-dll : $(LIB_SRCDIR)/common/xxhash.c $(PRGDIR)/util.c $(PRGDIR)/timefn.c $(PRGDIR)/datagen.c fuzzer.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -o $@$(EXT)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) $(ZSTD_CET_LDFLAGS) -o $@$(EXT)
 
 CLEAN += zstreamtest zstreamtest32
 ZSTREAM_LOCAL_FILES := $(PRGDIR)/datagen.c $(PRGDIR)/util.c $(PRGDIR)/timefn.c seqgen.c zstreamtest.c external_matchfinder.c
 ZSTREAM_PROPER_FILES := $(ZDICT_FILES) $(ZSTREAM_LOCAL_FILES)
 ZSTREAMFILES := $(ZSTD_FILES) $(ZSTREAM_PROPER_FILES)
-zstreamtest32 : CFLAGS += -m32
+zstreamtest32 : override CFLAGS += -m32
 zstreamtest zstreamtest32 : CPPFLAGS += $(MULTITHREAD_CPP)
 zstreamtest zstreamtest32 : LDFLAGS += $(MULTITHREAD_LD)
 zstreamtest : $(ZSTDMT_OBJECTS) $(ZSTREAM_PROPER_FILES)
@@ -211,7 +211,7 @@ zstreamtest_ubsan : $(ZSTREAMFILES)
 # note : broken : requires symbols unavailable from dynamic library
 zstreamtest-dll : $(LIB_SRCDIR)/common/xxhash.c  # xxh symbols not exposed from dll
 zstreamtest-dll : $(ZSTREAM_LOCAL_FILES)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -o $@$(EXT)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) $(ZSTD_CET_LDFLAGS) -o $@$(EXT)
 
 CLEAN += paramgrill
 paramgrill : DEBUGFLAGS =   # turn off debug for speed measurements
@@ -339,7 +339,11 @@ endif
 	@echo "******************************"
 
 .PHONY: test32
-test32: test-zstd32 test-fullbench32 test-fuzzer32 test-zstream32
+test32: test-make-target-flags test-zstd32 test-fullbench32 test-fuzzer32 test-zstream32
+
+.PHONY: test-make-target-flags
+test-make-target-flags:
+	+$(PYTHON) test-make-target-flags.py --make "$(MAKE)"
 
 .PHONY: test-all
 test-all: test test32 test-decodecorpus-cli
@@ -353,7 +357,7 @@ test-zstd-dll: ZSTD = $(PRGDIR)/zstd
 test-zstd-dll: zstd-dll
 
 test-zstd32: ZSTD = $(PRGDIR)/zstd32
-test-zstd32: zstd32
+test-zstd32: test-make-target-flags zstd32
 
 test-zstd-nolegacy: ZSTD = $(PRGDIR)/zstd-nolegacy
 test-zstd-nolegacy: zstd-nolegacy

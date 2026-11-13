@@ -131,9 +131,13 @@ CFLAGS  += -Qunused-arguments -Wa,--noexecstack
 endif
 endif
 
-ifeq ($(shell echo "int main(int argc, char* argv[]) { (void)argc; (void)argv; return 0; }" | $(CC) $(FLAGS) -z cet-report=error -x c -Werror - -o $(VOID) 2>$(VOID) && echo 1 || echo 0),1)
-LDFLAGS += -z cet-report=error
-endif
+# Probe in the link target's context: a target-specific -m32 can select a
+# different linker and startup objects from the default 64-bit compiler.
+# Keep detected flags separate from caller LDFLAGS so a recursive make does
+# not inherit a capability result for its parent's target.
+ZSTD_CET_LDFLAGS = $(shell echo "int main(int argc, char* argv[]) { (void)argc; (void)argv; return 0; }" | $(CC) $(CPPFLAGS) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) -z cet-report=error -x c -Werror - -o $(VOID) 2>$(VOID) && echo '-z cet-report=error')
+FLAGS += $(ZSTD_CET_LDFLAGS)
+LINK.c += $(ZSTD_CET_LDFLAGS)
 
 HAVE_COLORNEVER = $(shell echo a | grep --color=never a > /dev/null 2> /dev/null && echo 1 || echo 0)
 GREP_OPTIONS ?=
@@ -219,7 +223,7 @@ else ifeq ($(UNAME), OpenBSD)
 endif
 HASH ?= md5sum
 
-HASH_DIR = conf_$(shell echo $(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(ZSTD_FILES) | $(HASH) | cut -f 1 -d " " )
+HASH_DIR = conf_$(shell echo $(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(ZSTD_CET_LDFLAGS) $(ZSTD_FILES) | $(HASH) | cut -f 1 -d " " )
 HAVE_HASH :=$(shell echo 1 | $(HASH) > /dev/null && echo 1 || echo 0)
 ifeq ($(HAVE_HASH),0)
   $(info warning : could not find HASH ($(HASH)), needed to differentiate builds using different flags)
