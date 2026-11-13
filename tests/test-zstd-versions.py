@@ -23,7 +23,7 @@ from subprocess import Popen, PIPE
 repo_url = 'https://github.com/facebook/zstd.git'
 tmp_dir_name = 'tests/versionsTest'
 make_cmd = 'make'
-make_args = ['-j','CFLAGS=-O0']
+make_args = ['-j','CFLAGS=-O0 -std=gnu99']  # old versions predate C23, the default of recent compilers
 git_cmd = 'git'
 test_dat_src = 'README.md'
 test_dat = 'test_dat'
