@@ -454,10 +454,16 @@ test-decodecorpus-cli: decodecorpus
 test-pool: poolTests
 	$(QEMU_SYS) ./poolTests
 
+.PHONY: test-lz4-canonical-api
+# Keep obsolete names unavailable by including the default frame API first.
+test-lz4-canonical-api:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DZSTD_LZ4COMPRESS -DZSTD_LZ4DECOMPRESS \
+		-include lz4frame.h -fsyntax-only $(PRGDIR)/fileio.c
+
 test-lz4: ZSTD = $(PRGDIR)/zstd
 test-lz4: ZSTD_LZ4 = ./lz4
 test-lz4: ZSTD_UNLZ4 = ./unlz4
-test-lz4: zstd decodecorpus datagen
+test-lz4: test-lz4-canonical-api zstd decodecorpus datagen
 	[ -f lz4 ] || ln -s $(PRGDIR)/zstd lz4
 	[ -f unlz4 ] || ln -s $(PRGDIR)/zstd unlz4
 
