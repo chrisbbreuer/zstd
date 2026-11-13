@@ -186,6 +186,7 @@ zstd-release: DEBUGFLAGS_LD :=
 zstd-release: zstd
 
 CLEAN += zstd32
+zstd32 : override CFLAGS += -m32
 zstd32 : CPPFLAGS += $(THREAD_CPP)
 zstd32 : LDFLAGS  += $(THREAD_LD)
 zstd32 : CPPFLAGS += -DZSTD_LEGACY_SUPPORT=$(ZSTD_LEGACY_SUPPORT)
@@ -193,7 +194,7 @@ ifneq (,$(filter Windows%,$(OS)))
 zstd32 : $(RES32_FILE)
 endif
 zstd32 : $(ZSTDLIB_FULL_SRC) $(ZSTD_CLI_SRC)
-	$(CC) -m32 $(FLAGS) $^ -o $@$(EXT)
+	$(CC) $(FLAGS) $^ -o $@$(EXT)
 
 ## zstd-nolegacy: same scope as zstd, with removed support of legacy formats
 CLEAN += zstd-nolegacy
